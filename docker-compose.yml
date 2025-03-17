@@ -6,9 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     ports:
-      - "80:80"
+      - "81:80"
     volumes:
       - results_data:/data/results
+    networks:
+      - open_manus_network
     depends_on:
       - backend
 
@@ -20,9 +22,16 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - results_data:/data/results
+    networks:
+      - open_manus_network
     ports:
-      - "8000:8000"
+      - "8001:8000"
 
 volumes:
   results_data:
-    driver: local
+    name: results_data
+
+networks:
+  open_manus_network:
+    name: open_manus_network
+    driver: bridge
