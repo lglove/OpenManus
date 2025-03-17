@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenManus Chat Interface</title>
+  <style>
+    :root {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d2d;
+      --text-primary: #ffffff;
+      --text-secondary: #cccccc;
+      --text-tertiary: #888888;
+      --border-color: #404040;
+      --accent-color: #0078D4;
+      --success-color: #2ea043;
+      --error-color: #f85149;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+    }
+
+    /* 左侧聊天区域 */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color);
+      min-width: 600px;
+    }
+
+    .chat-header {
+      padding: 12px 16px;
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-header img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      background-color: var(--bg-primary);
+    }
+
+    .message {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 16px;
+    }
+
+    .message-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background-color: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-primary);
+      flex-shrink: 0;
+    }
+
+    .message-content {
+      flex: 1;
+      color: var(--text-primary);
+    }
+
+    .thought-message {
+      background-color: var(--bg-secondary);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .tool-message {
+      background-color: #2c2c2c;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-left: 2px solid var(--accent-color);
+    }
+
+    .chat-input {
+      padding: 16px;
+      background-color: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .input-container {
+      background-color: var(--bg-tertiary);
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      gap: 8px;
+    }
+
+    textarea {
+      flex: 1;
+      background-color: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: none;
+      padding: 4px;
+      height: 80px;
+    }
+
+    textarea:focus {
+      outline: none;
+    }
+
+    button {
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      height: fit-content;
+    }
+
+    button:hover {
+      background-color: #106ebe;
+    }
+
+    button:disabled {
+      background-color: var(--border-color);
+      cursor: not-allowed;
+    }
+
+    /* 右侧文件预览区域 */
+    .preview-container {
+      width: 400px;
+      background-color: var(--bg-secondary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      padding: 12px 16px;
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .preview-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .file-preview {
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+
+    /* 滚动条样式 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    .timestamp {
+      color: var(--text-tertiary);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .progress-bar {
+      height: 2px;
+      background-color: var(--accent-color);
+      width: 0;
+      transition: width 0.3s ease;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <img
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230078D4'%3E%3Cpath d='M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.236L19.09 8 12 11.764 4.91 8 12 4.236zM4 9.618v6.764L11.09 20V13.236L4 9.618zm16 0L13.09 13.236V20L20 16.382V9.618z'/%3E%3C/svg%3E"
+        alt="Logo">
+      <span>OpenManus Chat</span>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+      <div class="input-container">
+        <textarea id="prompt" placeholder="输入你的请求..."></textarea>
+        <button id="sendButton" onclick="submitStreamRequest()">发送</button>
+      </div>
+    </div>
+  </div>
+  <div class="preview-container">
+    <div class="preview-header">
+      文件预览
+    </div>
+    <div class="preview-content">
+      <div class="file-preview" id="filePreview"></div>
+    </div>
+  </div>
+
+  <script>
+    let isProcessing = false;
+
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+
+    function appendMessage(role, content, type = null) {
+      const messagesContainer = document.getElementById('chatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message';
+
+      const timestamp = formatTimestamp(new Date());
+      const avatar = role === 'user' ? '👤' : '🤖';
+
+      let messageContent = '';
+      if (type === 'thought') {
+        messageContent = `
+          <div class="thought-message">
+            <div class="timestamp">${timestamp}</div>
+            ${content}
+          </div>
+        `;
+      } else if (type === 'tool_usage') {
+        messageContent = `
+          <div class="tool-message">
+            <div class="timestamp">${timestamp}</div>
+            ${content}
+          </div>
+        `;
+      } else {
+        messageContent = `
+          <div class="timestamp">${timestamp}</div>
+          ${content}
+        `;
+      }
+
+      messageDiv.innerHTML = `
+        <div class="message-avatar">${avatar}</div>
+        <div class="message-content">
+          ${messageContent}
+        </div>
+      `;
+
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    async function submitStreamRequest() {
+      if (isProcessing) return;
+
+      const promptEl = document.getElementById('prompt');
+      const sendButton = document.getElementById('sendButton');
+
+      const prompt = promptEl.value.trim();
+      if (!prompt) return;
+
+      // 添加用户消息
+      appendMessage('user', prompt);
+
+      // 准备请求数据
+      const requestData = {
+        prompt: prompt,
+        config: {
+          max_steps: 20,
+          max_observe: 2000
+        }
+      };
+
+      // 更新 UI 状态
+      isProcessing = true;
+      sendButton.disabled = true;
+      promptEl.value = '';
+
+      try {
+        const response = await fetch('http://localhost:8000/api/v1/manus/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream'
+          },
+          body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.trim() === '' || !line.startsWith('data: ')) continue;
+
+            try {
+              const data = JSON.parse(line.slice(6));
+              appendMessage('assistant', data.content, data.type);
+
+              if (data.type === 'final' || data.type === 'error') {
+                reader.cancel();
+                break;
+              }
+            } catch (e) {
+              console.error('Failed to parse event data:', e);
+            }
+          }
+        }
+      } catch (error) {
+        appendMessage('assistant', `错误: ${error.message}`, 'error');
+      } finally {
+        isProcessing = false;
+        sendButton.disabled = false;
+      }
+    }
+
+    // 添加回车发送功能
+    document.getElementById('prompt').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitStreamRequest();
+      }
+    });
+  </script>
+</body>
+
+</html>

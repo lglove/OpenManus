@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git curl \
 
 COPY . .
 
-RUN uv pip install --system -r requirements.txt
+RUN uv pip install --system -r requirements.txt -i http://mirrors.aliyun.com/pypi/simple/
 
-CMD ["bash"]
+EXPOSE 8000
+
+CMD ["python", "api_server.py"]
